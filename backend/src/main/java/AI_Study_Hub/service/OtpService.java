@@ -34,7 +34,7 @@ public class OtpService {
     //Kiem tra so lan user nhap sai
     Map<String, Integer> attempts = new HashMap<>();
 
-    private String generarteOtp(){
+    public String generarteOtp(){
         Random random = new Random();
         int otp = 100000 + (random.nextInt(900000));
         return String.valueOf(otp);

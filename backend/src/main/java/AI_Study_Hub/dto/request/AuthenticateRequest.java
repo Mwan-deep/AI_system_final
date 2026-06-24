@@ -11,4 +11,5 @@ import lombok.experimental.FieldDefaults;
 public class AuthenticateRequest {
     String email;
     String passwordHash;
+    String deviceId;
 }

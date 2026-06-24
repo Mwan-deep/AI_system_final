@@ -5,12 +5,16 @@ import AI_Study_Hub.dto.request.IntroSpecRequest;
 import AI_Study_Hub.dto.request.LogoutRequest;
 import AI_Study_Hub.dto.response.AuthenticateResponse;
 import AI_Study_Hub.dto.response.IntroSpecResponse;
+import AI_Study_Hub.entity.Device;
+import AI_Study_Hub.entity.OtpVerification;
 import AI_Study_Hub.exception.AppException;
 import AI_Study_Hub.exception.ErrorCode;
 import AI_Study_Hub.entity.Account;
 import AI_Study_Hub.entity.InvalidatedtokenSession;
 import AI_Study_Hub.repository.AccountRespository;
+import AI_Study_Hub.repository.DeviceRepository;
 import AI_Study_Hub.repository.InvalidationRespository;
+import AI_Study_Hub.repository.OtpVerificationRespository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -21,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -46,26 +52,67 @@ public class AuthenticateService {
     protected String SIGNER_TOKEN;
     AccountRespository accountRespository;
     InvalidationRespository invalidationRespository;
+    OtpVerificationRespository  otpVerificationRespository;
+    DeviceRepository  deviceRepository;
+
+    @Autowired
+    EmailService emailService;
+
+    @Autowired
+    OtpService otpService;
+
 
 
     public AuthenticateResponse authenticate (AuthenticateRequest request){
         var account = accountRespository.findAccountByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USERNAME_NOT_EXITED));
-
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXITS));
 
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         boolean authenticated = passwordEncoder.matches(request.getPasswordHash(), account.getPasswordHash());
         if(!authenticated){
             throw new AppException(ErrorCode.PASSWORD_INCORRECTLY);
         }
-        passwordEncoder.encode(account.getPasswordHash());
 
-        var token = generateToken(account);
+        //------Verify Device------
 
-        return AuthenticateResponse.builder()
-                .token(token)
-                .authenticated(authenticated)
-                .build();
+        Optional<Device> deviceOptional = deviceRepository.findByDeviceId(request.getDeviceId());
+        if(deviceOptional.isPresent() && deviceOptional.get().getTrusted()){
+            var token = generateToken(account);
+            return AuthenticateResponse.builder()
+                    .token(token)
+                    .authenticated(authenticated)
+                    .build();
+        }else{
+            String optVf = otpService.generarteOtp();
+            OtpVerification otpVerification = new OtpVerification();
+            otpVerification.setGmail(request.getEmail());
+            otpVerification.setOtp(optVf);
+            otpVerification.setExpireTime(LocalDateTime.now().plus(1, ChronoUnit.MINUTES));
+
+            otpVerificationRespository.save(otpVerification);
+
+            emailService.sendGmail(
+                    account.getEmail(),
+                    " AI STUDY HUB - OTP Verification",
+                    "=====================================\n" +
+                            "        AI STUDY HUB SECURITY\n" +
+                            "=====================================\n\n" +
+                            "Hello,\n\n" +
+                            "You are trying to sign in to AI STUDY HUB.\n\n" +
+                            "Your One-Time Password (OTP) is:\n\n" +
+                            "        " + optVf + "\n\n" +
+                            "This code will expire in 1 minutes.\n\n" +
+                            "If you did NOT request this login, please ignore this email.\n\n" +
+                            "-------------------------------------\n" +
+                            "AI STUDY HUB Team\n" +
+                            "Secure Learning Platform\n" +
+                            "-------------------------------------");
+
+            return AuthenticateResponse.builder()
+                    .authenticated(false)
+                    .build();
+        }
+
     }
 
     public String generateToken(Account account){

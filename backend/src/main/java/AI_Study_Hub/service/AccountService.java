@@ -5,13 +5,16 @@ import AI_Study_Hub.dto.request.AccountUpdateRequest;
 import AI_Study_Hub.dto.request.ChangePasswordRequest;
 import AI_Study_Hub.dto.response.AccountResponse;
 import AI_Study_Hub.dto.response.ChangePasswordResponse;
+import AI_Study_Hub.entity.Device;
 import AI_Study_Hub.exception.AppException;
 import AI_Study_Hub.exception.ErrorCode;
 import AI_Study_Hub.Mapper.AccountMapper;
 import AI_Study_Hub.entity.Account;
 import AI_Study_Hub.entity.Role;
 import AI_Study_Hub.repository.AccountRespository;
+import AI_Study_Hub.repository.DeviceRepository;
 import AI_Study_Hub.repository.RoleRespository;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -32,9 +36,11 @@ import java.util.List;
 public class AccountService {
     AccountRespository accountRespository;
     RoleRespository roleRespository;
+    DeviceRepository deviceRepository;
 
     AccountMapper accountMapper;
 
+    @Transactional
     public AccountResponse createAccount(AccountCreateRequest request){
         try{
             if(accountRespository.existsAccountsByEmail(request.getEmail()))
@@ -59,6 +65,19 @@ public class AccountService {
             account.setUserName("user");
 
             account = accountRespository.save(account);
+
+            if(request.getDeviceId() != null && !request.getDeviceId().isEmpty()){
+                Device device = new Device();
+                device.setId(UUID.randomUUID().toString());
+                device.setDeviceId(request.getDeviceId());
+                device.setTrusted(true);
+                device.setLastLogin(LocalDateTime.now().toString());
+
+                device.setAccountId(account.getAccountId());
+
+                deviceRepository.save(device);
+
+            }
 
             return accountMapper.toAccountResponse(account);
 

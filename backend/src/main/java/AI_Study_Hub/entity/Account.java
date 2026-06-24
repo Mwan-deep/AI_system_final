@@ -76,5 +76,7 @@ public class Account {
 
     private Set<Role> roles = new HashSet<>();
 
+    @ManyToOne
+    private Set<Device> devices = new HashSet<>();
 
 }

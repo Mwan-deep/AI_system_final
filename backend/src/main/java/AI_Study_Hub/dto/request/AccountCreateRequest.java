@@ -1,11 +1,15 @@
 package AI_Study_Hub.dto.request;
 import AI_Study_Hub.Validation.DobConstraints;
 import AI_Study_Hub.Validation.EmailContraints;
+import AI_Study_Hub.entity.Device;
+import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -25,4 +29,5 @@ public class AccountCreateRequest {
     String gender;
     String avatarUrl;
     String bio;
+    String deviceId;
 }
