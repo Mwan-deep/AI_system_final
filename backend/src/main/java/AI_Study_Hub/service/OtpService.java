@@ -62,10 +62,18 @@ public class OtpService {
                 .expireTime(LocalDateTime.now().plus(1, ChronoUnit.MINUTES))
                 .build());
 
+        String emailContent = "Xin chào,\n\n"
+                + "Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản tại AI_Study_Hub.\n"
+                + "Mã OTP xác thực của bạn là: " + otp + "\n\n"
+                + "Lưu ý: Mã OTP này chỉ có hiệu lực trong vòng 1 phút. "
+                + "Vui lòng tuyệt đối không chia sẻ mã này cho bất kỳ ai.\n\n"
+                + "Trân trọng,\n"
+                + "Đội ngũ phát triển AI_Study_Hub";
+
         emailService.sendGmail(
-                request.getGmail(),
-                "Reset Password OTP" ,
-                "Your OTP is: " + otp + "(valid in 1 minute)"
+                request.getGmail(), // Nhớ check lại là request.getEmail() hay getGmail() nhé
+                "[AI_Study_Hub] Mã OTP Đặt Lại Mật Khẩu",
+                emailContent
         );
     }
 
