@@ -23,15 +23,15 @@ import org.springframework.security.web.SecurityFilterChain;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SecurityConfig {
     static String[] PUBLIC_ENDPOINT = {
-            "/account",
-            "/authen",
-            "/authen/introspec",
-            "/auth/**",
+            "/api/account",
+            "/api/authen",
+            "/api/authen/introspec",
+            "/api/auth/**",
             "/api/v1/share/download/**",
             "/api/v1/master-data/**",
             "/api/v1/rankings/**"
     };
-    static String[] MUST_BE_AUTHENTICATE = {"/account/change-password", "/authen/logout"};
+    static String[] MUST_BE_AUTHENTICATE = {"/api/account/change-password", "/api/authen/logout"};
 
     // ĐÃ XÓA BIẾN: private HttpSecurity http;
 
@@ -50,9 +50,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requestMatcherRegistry ->
                         requestMatcherRegistry
                                 .requestMatchers(PUBLIC_ENDPOINT).permitAll()
-                                .requestMatchers(HttpMethod.GET, "/account/**").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.DELETE, "/account/**").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.POST, "/account/createAccountByAdmin").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/api/account/**").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.DELETE, "/api/account/**").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/api/account/createAccountByAdmin").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.POST, MUST_BE_AUTHENTICATE).authenticated()
                                 .anyRequest()
                                 .authenticated())

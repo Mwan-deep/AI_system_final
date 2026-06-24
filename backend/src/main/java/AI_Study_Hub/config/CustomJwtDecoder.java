@@ -17,7 +17,7 @@ import javax.crypto.spec.SecretKeySpec;
 @Component
 public class CustomJwtDecoder implements JwtDecoder {
 
-    @Value("${spring.jwt.signerToken}")
+    @Value("${jwt.signerToken}")
     private String SIGNER_TOKEN;
 
     @Autowired

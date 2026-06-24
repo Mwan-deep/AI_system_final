@@ -48,7 +48,7 @@ public class OtpService {
 
         if(cooldown.containsKey(request.getGmail())){
             if(cooldown.get(request.getGmail()).isAfter(LocalDateTime.now())){
-                throw  new AppException(ErrorCode.TOO_MANY_REQUEST);
+                throw new AppException(ErrorCode.TOO_MANY_REQUEST);
             }
         }
 
