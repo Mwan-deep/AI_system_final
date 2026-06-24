@@ -60,7 +60,7 @@ public class StudyMaterialService {
                 .fileName(file.getOriginalFilename())
                 .fileType(file.getContentType())
                 .fileSize(file.getSize())
-                .visibility("PRIVATE")
+                .visibility("PRIVATE") // Sinh viên có thể tự đổi sang PUBLIC sau (nếu bạn làm API Update)
                 .viewCount(0)
                 .downloadCount(0)
                 .build();
@@ -72,8 +72,11 @@ public class StudyMaterialService {
         return savedMaterial;
     }
 
-    public List<StudyMaterial> getAllMaterials() {
-        return materialRepository.findAll();
+    // -------------------------------------------------------------------------
+    // HÀM MỚI: Lấy danh sách, Lọc và Tìm kiếm gộp chung (Đã xử lý Phân quyền)
+    // -------------------------------------------------------------------------
+    public List<StudyMaterial> getFilteredMaterials(Long accountId, Long semesterId, Long majorId, Long specializationId, String keyword) {
+        return materialRepository.filterAndSearchVisibleMaterials(accountId, semesterId, majorId, specializationId, keyword);
     }
 
     public StudyMaterial getMaterialById(Long materialId) {
@@ -81,7 +84,6 @@ public class StudyMaterialService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu với ID: " + materialId));
     }
 
-    // THUẬT TOÁN VINH DANH: Tăng lượt xem khi người dùng gọi xem chi tiết tài liệu
     @Transactional
     public StudyMaterial getMaterialDetailWithViewCount(Long materialId) {
         StudyMaterial material = getMaterialById(materialId);
@@ -89,7 +91,6 @@ public class StudyMaterialService {
         return materialRepository.save(material);
     }
 
-    // THUẬT TOÁN VINH DANH: Tăng lượt tải khi người dùng download tài liệu thành công
     @Transactional
     public StudyMaterial getMaterialForDownloadWithDownloadCount(Long materialId) {
         StudyMaterial material = getMaterialById(materialId);
@@ -107,9 +108,5 @@ public class StudyMaterialService {
         }
 
         materialRepository.delete(material);
-    }
-
-    public List<StudyMaterial> searchMaterials(String keyword) {
-        return materialRepository.searchMaterials(keyword);
     }
 }

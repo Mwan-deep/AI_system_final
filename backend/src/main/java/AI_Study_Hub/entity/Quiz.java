@@ -62,4 +62,8 @@ public class Quiz {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    // Thêm đoạn này vào bên dưới các thuộc tính đã có trong Quiz.java
+    @Column(name = "visibility", length = 20, nullable = false)
+    private String visibility;
 }

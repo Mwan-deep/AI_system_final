@@ -1,4 +1,4 @@
-package AI_Study_Hub.dto;
+package AI_Study_Hub.dto.response;
 
 import lombok.Builder;
 import lombok.Data;

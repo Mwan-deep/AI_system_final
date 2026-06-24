@@ -71,6 +71,8 @@ public class AccountService {
 
         accountMapper.toUpdateAccount(request, account);
 
+        account.setUpdatedAt(LocalDateTime.now());
+
         accountRespository.save(account);
 
         return accountMapper.toAccountResponse(account);

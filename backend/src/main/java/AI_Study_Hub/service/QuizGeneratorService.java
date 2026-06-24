@@ -1,5 +1,6 @@
 package AI_Study_Hub.service;
 
+import AI_Study_Hub.dto.request.QuizCreateRequest;
 import AI_Study_Hub.entity.*;
 import AI_Study_Hub.repository.*;
 import com.google.gson.JsonArray;
@@ -26,17 +27,13 @@ public class QuizGeneratorService {
     private final StudyMaterialRepository materialRepository;
     private final GeminiService geminiService;
 
+    // HÀM 1: AI SINH CÂU HỎI VÀ LƯU VÀO NGÂN HÀNG (Chưa tạo Quiz)
     @Transactional
-    public Quiz generateQuizFromMaterial(Long materialId, Long accountId, int quantity) {
-        // 1. Kiểm tra tài khoản và ngữ cảnh tài liệu học tập
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
-        StudyMaterial material = materialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+    public List<Question> generateQuestionsOnly(Long materialId, int quantity) {
+
         MaterialContext context = contextRepository.findByStudyMaterial_MaterialId(materialId)
                 .orElseThrow(() -> new RuntimeException("Tài liệu chưa được phân tích nội dung văn bản để sinh trắc nghiệm"));
 
-        // 2. Thiết kế Prompt ép AI trả về định dạng mảng JSON thuần túy
         String prompt = "Dựa trên nội dung tài liệu học tập được cung cấp dưới đây, hãy tạo ra đúng " + quantity + " câu hỏi trắc nghiệm ôn tập. " +
                 "Mỗi câu hỏi phải có từ 4 phương án lựa chọn, và chỉ có duy nhất một phương án đúng.\n\n" +
                 "YÊU CẦU BẮT BUỘC: Bạn chỉ được phép trả về chuỗi định dạng JSON thuần túy theo cấu trúc mẫu sau, không được chứa bất kỳ từ giải thích nào ngoài khối JSON:\n" +
@@ -55,7 +52,6 @@ public class QuizGeneratorService {
 
         String aiResponse = geminiService.chatWithGemini(prompt).trim();
 
-        // Xử lý loại bỏ thẻ định dạng markdown nếu AI tự ý bọc khối JSON (ví dụ: ```json ... ```)
         if (aiResponse.startsWith("```json")) {
             aiResponse = aiResponse.substring(7);
         }
@@ -64,18 +60,6 @@ public class QuizGeneratorService {
         }
         aiResponse = aiResponse.trim();
 
-        // 3. Khởi tạo thực thể Quiz cha
-        Quiz quiz = Quiz.builder()
-                .account(account)
-                .title("Bài trắc nghiệm tự động: " + material.getTitle())
-                .quantity(quantity)
-                .duration(LocalTime.of(0, 15)) // Mặc định thời gian làm bài 15 phút
-                .passScore(5.0)
-                .questions(new ArrayList<>())
-                .build();
-        quiz = quizRepository.save(quiz);
-
-        // 4. Phân tích chuỗi JSON trả về từ AI bằng Gson để lưu dữ liệu con
         try {
             JsonArray questionsArray = JsonParser.parseString(aiResponse).getAsJsonArray();
             List<Question> savedQuestions = new ArrayList<>();
@@ -84,9 +68,8 @@ public class QuizGeneratorService {
                 JsonObject qObj = qElem.getAsJsonObject();
                 String qText = qObj.get("questionText").getAsString();
 
-                // Tạo câu hỏi (ĐÃ SỬA LẠI LIÊN KẾT)
                 Question question = Question.builder()
-                        .materialContext(context) // <--- Sửa dòng này, trỏ vào context thay vì material
+                        .materialContext(context)
                         .questionText(qText)
                         .build();
                 question = questionRepository.save(question);
@@ -94,7 +77,6 @@ public class QuizGeneratorService {
                 JsonArray optionsArray = qObj.getAsJsonArray("options");
                 String correctText = "";
 
-                // Duyệt danh sách các phương án của câu hỏi
                 for (JsonElement oElem : optionsArray) {
                     JsonObject oObj = oElem.getAsJsonObject();
                     String oText = oObj.get("text").getAsString();
@@ -112,19 +94,70 @@ public class QuizGeneratorService {
                     }
                 }
 
-                // Cập nhật lại đáp án đúng dạng văn bản cho Question
                 question.setCorrectAnswer(correctText);
                 questionRepository.save(question);
 
                 savedQuestions.add(question);
             }
 
-            // Gắn danh sách câu hỏi vào Quiz qua bảng trung gian quiz_questions
-            quiz.setQuestions(savedQuestions);
-            return quizRepository.save(quiz);
+            return savedQuestions;
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi phân tích cú pháp dữ liệu câu hỏi từ AI: " + e.getMessage() + ". Nội dung thô: " + aiResponse);
         }
+    }
+
+    // HÀM 2: NGƯỜI DÙNG CHỐT DANH SÁCH VÀ TẠO BÀI THI
+    @Transactional
+    public Quiz createCustomQuiz(Long accountId, QuizCreateRequest request) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+
+        List<Question> selectedQuestions = questionRepository.findAllById(request.getQuestionIds());
+
+        if (selectedQuestions.isEmpty()) {
+            throw new RuntimeException("Bạn phải chọn ít nhất 1 câu hỏi để tạo bài thi!");
+        }
+
+        int hours = request.getDurationMinutes() / 60;
+        int minutes = request.getDurationMinutes() % 60;
+        LocalTime duration = LocalTime.of(hours, minutes);
+
+        // Xử lý logic Visibility an toàn: Ép về PRIVATE nếu Frontend gửi rỗng hoặc sai
+        String visibilityStatus = (request.getVisibility() != null && request.getVisibility().equalsIgnoreCase("PUBLIC"))
+                ? "PUBLIC" : "PRIVATE";
+
+        Quiz quiz = Quiz.builder()
+                .account(account)
+                .title(request.getTitle())
+                .quantity(selectedQuestions.size())
+                .duration(duration)
+                .passScore(request.getPassScore())
+                .visibility(visibilityStatus) // LƯU THUỘC TÍNH VISIBILITY VÀO DATABASE
+                .questions(selectedQuestions)
+                .build();
+
+        return quizRepository.save(quiz);
+    }
+
+    // HÀM 3: CẬP NHẬT TRẠNG THÁI PUBLIC/PRIVATE SAU KHI ĐÃ TẠO
+    @Transactional
+    public Quiz updateQuizVisibility(Long quizId, Long accountId, String newVisibility) {
+        // 1. Tìm bài thi trong hệ thống
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài thi với ID: " + quizId));
+
+        // 2. CHỐT CHẶN BẢO MẬT: Kiểm tra xem người yêu cầu đổi có phải là chủ nhân bài thi không?
+        if (!quiz.getAccount().getAccountId().equals(accountId)) {
+            throw new RuntimeException("Truy cập bị từ chối! Bạn không có quyền chỉnh sửa bài thi của người khác.");
+        }
+
+        // 3. Chuẩn hóa dữ liệu đầu vào (Chỉ nhận PUBLIC, còn lại ép về PRIVATE)
+        String visibilityStatus = (newVisibility != null && newVisibility.equalsIgnoreCase("PUBLIC"))
+                ? "PUBLIC" : "PRIVATE";
+
+        // 4. Cập nhật và lưu lại
+        quiz.setVisibility(visibilityStatus);
+        return quizRepository.save(quiz);
     }
 }

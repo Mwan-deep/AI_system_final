@@ -8,6 +8,8 @@ import java.util.List;
 
 @Repository
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> {
-    // Tìm toàn bộ lịch sử làm bài của một học sinh
-    List<QuizAttempt> findByAccount_AccountId(Long accountId);
+
+    // Lấy toàn bộ lịch sử làm bài của một người dùng, bài mới nhất xếp trên cùng
+    List<QuizAttempt> findByAccount_AccountIdOrderByCreatedAtDesc(Long accountId);
+
 }

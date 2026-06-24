@@ -11,13 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -54,12 +50,34 @@ public class StudyMaterialController {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // API MỚI: Truy xuất kho tài liệu (Tích hợp Tìm kiếm + Lọc + Phân quyền)
+    // -------------------------------------------------------------------------
     @GetMapping
-    public ResponseEntity<List<StudyMaterial>> getAllDocuments() {
-        return ResponseEntity.ok(materialService.getAllMaterials());
+    public ResponseEntity<?> getDocuments(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "semesterId", required = false) Long semesterId,
+            @RequestParam(value = "majorId", required = false) Long majorId,
+            @RequestParam(value = "specializationId", required = false) Long specializationId) {
+
+        try {
+            // Xác định danh tính để biết tài liệu nào của riêng User này
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            Account currentUser = accountRepository.findByUserName(username)
+                    .orElseThrow(() -> new RuntimeException("Lỗi định danh"));
+
+            List<StudyMaterial> results = materialService.getFilteredMaterials(
+                    currentUser.getAccountId(), semesterId, majorId, specializationId, keyword
+            );
+
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi truy xuất tài liệu: " + e.getMessage());
+        }
     }
 
-    // API Xem chi tiết: Đã chuyển đổi sang hàm Service có tích hợp tăng View Count
+    // API Xem chi tiết
     @GetMapping("/{id}")
     public ResponseEntity<StudyMaterial> getDocumentDetail(@PathVariable("id") Long id) {
         try {
@@ -70,7 +88,7 @@ public class StudyMaterialController {
         }
     }
 
-    // API Tải tài liệu: Đã chuyển đổi sang hàm Service có tích hợp tăng Download Count
+    // API Tải tài liệu
     @GetMapping("/download/{id}")
     public ResponseEntity<?> downloadDocument(@PathVariable("id") Long id) {
         try {
@@ -109,6 +127,7 @@ public class StudyMaterialController {
         }
     }
 
+    // API Xóa tài liệu
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteDocument(@PathVariable("id") Long id) {
         try {
@@ -116,18 +135,6 @@ public class StudyMaterialController {
             return ResponseEntity.ok("Đã xóa tài liệu và file vật lý thành công!");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi khi xóa: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/search")
-    public ResponseEntity<List<StudyMaterial>> searchDocuments(
-            @RequestParam(value = "keyword", required = false) String keyword) {
-
-        try {
-            List<StudyMaterial> results = materialService.searchMaterials(keyword);
-            return ResponseEntity.ok(results);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }

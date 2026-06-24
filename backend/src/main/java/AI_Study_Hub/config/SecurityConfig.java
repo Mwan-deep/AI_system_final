@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer; // <--- IMPORT MỚI
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -26,13 +27,13 @@ public class SecurityConfig {
             "/authen",
             "/authen/introspec",
             "/auth/**",
-            "/api/v1/share/download/**", // <--- THÊM DÒNG NÀY CỦA CHÚNG TA VÀO
-
-            // --- THÊM 2 DÒNG NÀY ---
+            "/api/v1/share/download/**",
             "/api/v1/master-data/**",
             "/api/v1/rankings/**"
     };
     static String[] MUST_BE_AUTHENTICATE = {"/account/change-password", "/authen/logout"};
+
+    // ĐÃ XÓA BIẾN: private HttpSecurity http;
 
     @Autowired
     CustomJwtDecoder customJwtDecoder;
@@ -41,17 +42,17 @@ public class SecurityConfig {
     CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) {
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
+                // ĐÃ SỬA DÒNG NÀY: Dùng mặc định để Spring tự động nối với file CorsConfig.java
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(requestMatcherRegistry ->
                         requestMatcherRegistry
-                                //Cho Phep Su Dung Khong Can Quyen, Ai Cung Co The Truy Cap Duoc
                                 .requestMatchers(PUBLIC_ENDPOINT).permitAll()
-                                //Lay Het Tai Khoan Ra Do Admin Quan Ly - Role: Admin
                                 .requestMatchers(HttpMethod.GET, "/account/**").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.DELETE, "/account/**").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.POST, "/account/createAccountByAdmin").hasRole("ADMIN")
-                                //(phải login)
                                 .requestMatchers(HttpMethod.POST, MUST_BE_AUTHENTICATE).authenticated()
                                 .anyRequest()
                                 .authenticated())
@@ -59,16 +60,13 @@ public class SecurityConfig {
                         exception.accessDeniedHandler(customAccessDeniedHandler))
         ;
 
-
         httpSecurity.oauth2ResourceServer(oAuth2 ->
                 oAuth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
                         .jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
-        httpSecurity.csrf(AbstractHttpConfigurer::disable);
-
         return httpSecurity.build();
-
     }
+
     public JwtAuthenticationConverter jwtAuthenticationConverter(){
         JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");

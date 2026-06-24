@@ -32,4 +32,19 @@ public interface StudyMaterialRepository extends JpaRepository<StudyMaterial, Lo
 
     // Thuật toán: Lấy Top 10 tài liệu có lượt xem cao nhất
     List<StudyMaterial> findTop10ByOrderByViewCountDesc();
+
+    // Bổ sung vào bên trong interface StudyMaterialRepository
+    @Query("SELECT m FROM StudyMaterial m " +
+            "WHERE (m.visibility = 'PUBLIC' OR m.account.accountId = :accountId) " +
+            "AND (:semesterId IS NULL OR m.semester.semesterId = :semesterId) " +
+            "AND (:specializationId IS NULL OR m.subject.specialization.specializationId = :specializationId) " +
+            "AND (:majorId IS NULL OR m.subject.specialization.major.majorId = :majorId) " +
+            "AND (:keyword IS NULL OR LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(m.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY m.createdAt DESC")
+    List<StudyMaterial> filterAndSearchVisibleMaterials(
+            @Param("accountId") Long accountId,
+            @Param("semesterId") Long semesterId,
+            @Param("majorId") Long majorId,
+            @Param("specializationId") Long specializationId,
+            @Param("keyword") String keyword);
 }

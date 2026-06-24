@@ -1,6 +1,6 @@
 package AI_Study_Hub.service;
 
-import AI_Study_Hub.dto.QuizSubmitRequest;
+import AI_Study_Hub.dto.request.QuizSubmitRequest;
 import AI_Study_Hub.entity.Account;
 import AI_Study_Hub.entity.QuestionOption;
 import AI_Study_Hub.entity.Quiz;

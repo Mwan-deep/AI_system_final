@@ -1,4 +1,4 @@
-package AI_Study_Hub.dto;
+package AI_Study_Hub.dto.request;
 
 import lombok.Data;
 import java.util.Map;
