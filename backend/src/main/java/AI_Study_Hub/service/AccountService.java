@@ -143,4 +143,9 @@ public class AccountService {
         return accountMapper.toAccountResponse(accountRespository.save(account));
 
     }
+    public AccountResponse GetAccountById(Long id){
+        var account = accountRespository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_EXITS));
+        return accountMapper.toAccountResponse(account);
+    }
 }

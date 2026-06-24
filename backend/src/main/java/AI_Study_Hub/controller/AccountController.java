@@ -72,4 +72,11 @@ public class AccountController {
                 .result(result)
                 .build();
     }
+    @GetMapping("/infor/{id}")
+    ApiResponse<AccountResponse> getAccountById(@PathVariable Long id){
+        var result = accountService.GetAccountById(id);
+        return ApiResponse.<AccountResponse>builder()
+                .result(result)
+                .build();
+    }
 }

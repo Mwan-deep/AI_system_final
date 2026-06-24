@@ -31,7 +31,7 @@ public class SecurityConfig {
             "/api/v1/master-data/**",
             "/api/v1/rankings/**"
     };
-    static String[] MUST_BE_AUTHENTICATE = {"/api/account/change-password", "/api/authen/logout"};
+    static String[] MUST_BE_AUTHENTICATE = {"/api/account/change-password", "/api/authen/logout", "/infor/{id}"};
 
     // ĐÃ XÓA BIẾN: private HttpSecurity http;
 
