@@ -41,7 +41,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticateService {
-    @Value("${spring.jwt.signerToken}")
+    @Value("${jwt.signerToken}")
     @NonFinal
     protected String SIGNER_TOKEN;
     AccountRespository accountRespository;
@@ -49,7 +49,7 @@ public class AuthenticateService {
 
 
     public AuthenticateResponse authenticate (AuthenticateRequest request){
-        var account = accountRespository.findAccountByUserName(request.getUserName())
+        var account = accountRespository.findAccountByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USERNAME_NOT_EXITED));
 
 
@@ -68,7 +68,7 @@ public class AuthenticateService {
                 .build();
     }
 
-    private String generateToken(Account account){
+    public String generateToken(Account account){
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS256);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()

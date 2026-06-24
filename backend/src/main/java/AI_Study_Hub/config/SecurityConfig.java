@@ -41,6 +41,9 @@ public class SecurityConfig {
     @Autowired
     CustomAccessDeniedHandler customAccessDeniedHandler;
 
+    @Autowired
+    GoogleSingInHandler googleSingInHandler;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
@@ -57,8 +60,9 @@ public class SecurityConfig {
                                 .anyRequest()
                                 .authenticated())
                 .exceptionHandling(exception ->
-                        exception.accessDeniedHandler(customAccessDeniedHandler))
-        ;
+                        exception.accessDeniedHandler(customAccessDeniedHandler));
+
+        httpSecurity.oauth2Login(oauth2 -> oauth2.successHandler(googleSingInHandler));
 
         httpSecurity.oauth2ResourceServer(oAuth2 ->
                 oAuth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
@@ -67,6 +71,7 @@ public class SecurityConfig {
         return httpSecurity.build();
     }
 
+    @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter(){
         JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");

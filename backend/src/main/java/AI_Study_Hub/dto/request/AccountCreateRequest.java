@@ -14,7 +14,6 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AccountCreateRequest {
-    String userName;
     @Size(min = 5 , message = "PASSWORD_INVALIDATION")
     String passwordHash;
     @Size(min = 2 , message = "Name must be at leats 2 characterist")

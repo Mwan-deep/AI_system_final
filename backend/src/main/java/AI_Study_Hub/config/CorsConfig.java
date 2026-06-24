@@ -13,24 +13,14 @@ public class CorsConfig {
 
     @Bean
     public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
+       CorsConfiguration corsConfiguration = new CorsConfiguration();
+       corsConfiguration.addAllowedOrigin("http://localhost:5173");
+       corsConfiguration.addAllowedHeader("*");
+       corsConfiguration.addAllowedMethod("*");
 
-        // 1. Cho phép gửi Cookie và Token xác thực
-        config.setAllowCredentials(true);
+       UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
+       urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
 
-        // 2. CHỈ ĐỊNH RÕ RÀNG PORT CỦA FRONTEND (Chìa khóa giải quyết lỗi của bạn)
-        config.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-
-        // 3. Cho phép tất cả các Header (Authorization, Content-Type...)
-        config.setAllowedHeaders(Arrays.asList("*"));
-
-        // 4. Cho phép tất cả các phương thức gọi API (GET, POST, PUT, PATCH, DELETE)
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
-        // 5. Áp dụng cấu hình này cho mọi API (/**)
-        source.registerCorsConfiguration("/**", config);
-
-        return new CorsFilter(source);
+       return new CorsFilter(urlBasedCorsConfigurationSource);
     }
 }

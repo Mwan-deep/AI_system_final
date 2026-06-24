@@ -56,6 +56,8 @@ public class AccountService {
 
             account.setAccountStatus("ACTIVE");
 
+            account.setUserName("user");
+
             account = accountRespository.save(account);
 
             return accountMapper.toAccountResponse(account);
@@ -125,8 +127,8 @@ public class AccountService {
     public AccountResponse createAccountByAdmin(AccountCreateRequest request){
         var account = accountMapper.toAccount(request);
 
-        if(accountRespository.existsAccountsByUserName(request.getUserName())){
-            throw new AppException(ErrorCode.USERNAME_EXITED);
+        if(accountRespository.existsAccountsByEmail(request.getEmail())){
+            throw new AppException(ErrorCode.EMAIL_NOT_EXITS);
         }
 
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
@@ -137,6 +139,8 @@ public class AccountService {
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
 
         roles.add(managerRole);
+
+        account.setUserName("manager");
 
         account.setRoles(roles);
 
