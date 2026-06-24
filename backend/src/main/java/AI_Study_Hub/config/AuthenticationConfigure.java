@@ -63,7 +63,6 @@ public class AuthenticationConfigure {
                 log.warn("admin human has been created with default password: admin,please change it ");
 
             }
-
         };
     }
 

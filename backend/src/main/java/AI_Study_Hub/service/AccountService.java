@@ -76,9 +76,7 @@ public class AccountService {
                 device.setAccountId(account.getAccountId());
 
                 deviceRepository.save(device);
-
             }
-
             return accountMapper.toAccountResponse(account);
 
         }catch (DataIntegrityViolationException exception){
