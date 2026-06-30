@@ -62,7 +62,7 @@ public class AccountService {
 
             account.setAccountStatus("ACTIVE");
 
-            account.setUserName("user");
+            account.setUserName("user_" + UUID.randomUUID().toString());
 
             account = accountRespository.save(account);
 
@@ -81,7 +81,7 @@ public class AccountService {
 
         }catch (DataIntegrityViolationException exception){
             log.error("Database integrity violation during account creation", exception);
-            throw new AppException(ErrorCode.USERNAME_EXITED);
+            throw new AppException(ErrorCode.EMAIL_EXITED);
         }
     }
     public AccountResponse updateAccount(AccountUpdateRequest request , Long id){
